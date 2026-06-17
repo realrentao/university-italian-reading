@@ -893,16 +893,46 @@ async function getAudioData(key, type) {
   }
 }
 
-function b64ToBlobUrl(b64) {
-  const byteChars = atob(b64);
-  const bytes = new Uint8Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
-  return URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
-}
+  // ===== Audio Interruption System with Sequence Protection =====
+  let playSeq = 0;           // Incremented on each play request; guards against stale async fetches
 
+  // Audio playback state references
+  let currentAudio = null;   // Word audio
+  let currentBtn = null;
+  let currentParaAudio = null;
+  let currentParaBtn = null;
+  let fullAudio = null;
+  let fullPlayBtn = null;
 
-// Helper: create Audio from b64 and play with optional speed
-  function playB64(b64, speed) {
+  function b64ToBlobUrl(b64) {
+    const byteChars = atob(b64);
+    const bytes = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+    return URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
+  }
+
+  function stopAllAudio() {
+    if (currentAudio) {
+      currentAudio.pause();
+      if (currentBtn) { currentBtn.classList.remove('playing'); }
+      currentAudio = null; currentBtn = null;
+    }
+    if (currentParaAudio) {
+      currentParaAudio.pause();
+      if (currentParaBtn) { currentParaBtn.classList.remove('playing'); }
+      currentParaAudio = null; currentParaBtn = null;
+    }
+    if (fullAudio) {
+      fullAudio.pause();
+      if (fullPlayBtn) {
+        fullPlayBtn.classList.remove('playing');
+        fullPlayBtn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> 播放';
+      }
+      fullAudio = null;
+    }
+  }
+
+  function playFromB64(b64, speed) {
     const blobUrl = b64ToBlobUrl(b64);
     const audio = new Audio(blobUrl);
     if (speed) audio.playbackRate = speed;
@@ -910,41 +940,48 @@ function b64ToBlobUrl(b64) {
     return audio;
   }
 
-  // Helper: common audio cleanup
-  function wireAudio(audio, btn, onEnd) {
-    audio.onended = () => { cleanupAudio(btn); if (onEnd) onEnd(); };
-    audio.onerror = () => { cleanupAudio(btn); if (onEnd) onEnd(); };
-    audio.play().catch(() => { cleanupAudio(btn); if (onEnd) onEnd(); });
-  }
-  
-  function cleanupAudio(btn) {
+  function finishAudio(audio, btn) {
     if (btn) btn.classList.remove('playing');
+    if (audio && audio._blobUrl) URL.revokeObjectURL(audio._blobUrl);
   }
 
-  // Audio playback for Italian words (async, on-demand fetch)
   async function playWord(btn) {
     const word = btn.dataset.word;
-
-    // Toggle: same button clicked again
-    if (currentBtn === btn) {
+    if (!word) return;
+    
+    // Toggle off if same button
+    if (currentBtn === btn && currentAudio) {
       stopAllAudio();
       return;
     }
     
+    // Increment sequence to invalidate any stale fetch that may be in-flight
+    const seq = ++playSeq;
+    
     stopAllAudio();
-
+    
     const data = await getAudioData(word, 'word');
+    // Guard: if another play started while we were fetching, discard this result
+    if (seq !== playSeq) return;
     if (!data || !data.b64) { console.warn('No audio for:', word); return; }
-
-    const audio = playB64(data.b64);
+    
+    const audio = playFromB64(data.b64);
     currentAudio = audio;
     currentBtn = btn;
     btn.classList.add('playing');
-
-    wireAudio(audio, btn, () => {
-      URL.revokeObjectURL(audio._blobUrl);
-      currentAudio = null;
-      currentBtn = null;
+    
+    audio.onended = () => {
+      if (currentAudio === audio) { currentAudio = null; currentBtn = null; }
+      finishAudio(audio, btn);
+    };
+    audio.onerror = () => {
+      if (currentAudio === audio) { currentAudio = null; currentBtn = null; }
+      finishAudio(audio, btn);
+      console.warn('Audio error:', word);
+    };
+    audio.play().catch(e => {
+      if (currentAudio === audio) { currentAudio = null; currentBtn = null; }
+      finishAudio(audio, btn);
     });
   }
 
@@ -1018,73 +1055,47 @@ function b64ToBlobUrl(b64) {
   }
 
 
-  // ===== Audio interruption system =====
-  // All audio playback goes through this: playing new audio stops any previous audio
-  let currentParaAudio = null;
-  let currentParaBtn = null;
-  let fullAudio = null;
-  let fullPlayBtn = null;
-  let currentAudio = null;
-  let currentBtn = null;
-
-  function stopAllAudio() {
-    // Stop vocabulary/note word audio
-    if (currentAudio) {
-      currentAudio.pause();
-      if (currentBtn) currentBtn.classList.remove('playing');
-      currentAudio = null; currentBtn = null;
-    }
-    // Stop paragraph audio
-    if (currentParaAudio) {
-      currentParaAudio.pause();
-      if (currentParaBtn) currentParaBtn.classList.remove('playing');
-      currentParaAudio = null; currentParaBtn = null;
-    }
-    // Stop full-text audio
-    if (fullAudio) {
-      fullAudio.pause();
-      if (fullPlayBtn) {
-        fullPlayBtn.classList.remove('playing');
-        fullPlayBtn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> 播放';
-      }
-      fullAudio = null;
-    }
-  }
-
   let paraSpeed = 1.0;
 
   function setParaSpeed(btn, speed) {
     paraSpeed = speed;
-    // Update active state for all speed buttons in this trans-bar
     const wrap = btn.closest('.trans-bar');
     wrap.querySelectorAll('.speed-p-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    // If currently playing this paragraph, adjust speed
     if (currentParaAudio && currentParaBtn && currentParaBtn.closest('.trans-bar') === wrap) {
       currentParaAudio.playbackRate = speed;
     }
   }
 
   async function playPara(btn, idx) {
-    // Toggle: same button clicked again
-    if (currentParaBtn === btn) {
+    if (currentParaBtn === btn && currentParaAudio) {
       stopAllAudio();
       return;
     }
     
+    const seq = ++playSeq;
     stopAllAudio();
     
     const data = await getAudioData(idx, 'para');
+    if (seq !== playSeq) return;
     if (!data || !data.b64) return;
     
-    const audio = playB64(data.b64, paraSpeed);
+    const audio = playFromB64(data.b64, paraSpeed);
     currentParaAudio = audio;
     currentParaBtn = btn;
     btn.classList.add('playing');
     
-    wireAudio(audio, btn, () => {
-      URL.revokeObjectURL(audio._blobUrl);
-      currentParaAudio = null; currentParaBtn = null;
+    audio.onended = () => {
+      if (currentParaAudio === audio) { currentParaAudio = null; currentParaBtn = null; }
+      finishAudio(audio, btn);
+    };
+    audio.onerror = () => {
+      if (currentParaAudio === audio) { currentParaAudio = null; currentParaBtn = null; }
+      finishAudio(audio, btn);
+    };
+    audio.play().catch(() => {
+      if (currentParaAudio === audio) { currentParaAudio = null; currentParaBtn = null; }
+      finishAudio(audio, btn);
     });
   }
 
@@ -1095,19 +1106,13 @@ function b64ToBlobUrl(b64) {
     currentSpeed = speed;
     document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    
-    // If currently playing, adjust speed
-    if (fullAudio) {
-      fullAudio.playbackRate = speed;
-    }
+    if (fullAudio) fullAudio.playbackRate = speed;
   }
 
   async function playFullText() {
     const btn = document.getElementById('playFullBtn');
-    fullPlayBtn = btn;
     
     if (fullAudio) {
-      // Toggle play/pause - preserves position
       if (fullAudio.paused) {
         fullAudio.play();
         btn.classList.add('playing');
@@ -1120,20 +1125,33 @@ function b64ToBlobUrl(b64) {
       return;
     }
     
+    const seq = ++playSeq;
     stopAllAudio();
+    fullPlayBtn = btn;
     
     const data = await getAudioData('full', 'para');
+    if (seq !== playSeq) return;
     if (!data || !data.b64) return;
     
-    const audio = playB64(data.b64, currentSpeed);
+    const audio = playFromB64(data.b64, currentSpeed);
     fullAudio = audio;
     btn.classList.add('playing');
     btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> 暂停';
     
-    wireAudio(audio, btn, () => {
-      URL.revokeObjectURL(audio._blobUrl);
+    audio.onended = () => {
+      if (fullAudio === audio) fullAudio = null;
+      finishAudio(audio, btn);
       btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> 播放';
-      fullAudio = null;
+    };
+    audio.onerror = () => {
+      if (fullAudio === audio) fullAudio = null;
+      finishAudio(audio, btn);
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> 播放';
+    };
+    audio.play().catch(() => {
+      if (fullAudio === audio) fullAudio = null;
+      finishAudio(audio, btn);
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> 播放';
     });
   }
 
