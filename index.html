@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大学意大利语阅读教程 · 第一册</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Serif+SC:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ita-green: #009246;
+    --ita-white: #F1F2F1;
+    --ita-red: #CE2B37;
+    --gold: #C4A35A;
+    --cream: #FAF8F3;
+    --text-dark: #2C2C2C;
+    --text-mid: #5C5C5C;
+    --border-light: #E8E4DC;
+    --radius: 12px;
+  }
+
+  body {
+    font-family: 'Inter', 'Noto Serif SC', 'PingFang SC', sans-serif;
+    background: var(--cream);
+    color: var(--text-dark);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  .header-bar {
+    background: linear-gradient(135deg, var(--ita-green) 0%, #007A38 50%, var(--ita-green) 100%);
+    height: 6px;
+  }
+  .header-bar::after {
+    content: '';
+    display: block;
+    height: 3px;
+    background: linear-gradient(90deg, transparent 0%, var(--gold) 50%, transparent 100%);
+  }
+
+  .hero {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 60px 40px 40px;
+    text-align: center;
+  }
+
+  .hero .flag {
+    display: inline-flex;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+  .hero .flag span {
+    display: inline-block;
+    width: 24px; height: 16px;
+    border-radius: 3px;
+  }
+  .hero .flag .g { background: var(--ita-green); }
+  .hero .flag .w { background: #fff; border: 1px solid #ddd; }
+  .hero .flag .r { background: var(--ita-red); }
+
+  .hero h1 {
+    font-family: 'Playfair Display', 'Noto Serif SC', serif;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+  }
+  .hero h1 .ita { color: var(--ita-green); }
+  .hero h1 .cn { color: var(--ita-red); }
+  .hero .subtitle {
+    font-size: 16px;
+    color: var(--text-mid);
+    margin-bottom: 30px;
+  }
+  .hero .desc {
+    font-size: 14px;
+    color: var(--text-mid);
+    max-width: 500px;
+    margin: 0 auto 40px;
+    line-height: 1.8;
+  }
+
+  .lessons {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 40px 60px;
+  }
+
+  .lessons h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-mid);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .lessons h2::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-light);
+  }
+
+  .lesson-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    text-decoration: none;
+    color: var(--text-dark);
+    transition: all .2s;
+    border-left: 4px solid var(--ita-green);
+    margin-bottom: 12px;
+  }
+  .lesson-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+  }
+  .lesson-card .num {
+    width: 36px; height: 36px;
+    background: var(--ita-green);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .lesson-card .info { flex: 1; }
+  .lesson-card .info .title {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-dark);
+  }
+  .lesson-card .info .cn-title {
+    font-size: 13px;
+    color: var(--text-mid);
+  }
+  .lesson-card .arrow {
+    color: var(--ita-green);
+    font-size: 18px;
+    font-weight: 300;
+  }
+  .lesson-card.coming {
+    border-left-color: #D5D0C8;
+    opacity: .5;
+    cursor: default;
+    pointer-events: none;
+  }
+  .lesson-card.coming .num {
+    background: #D5D0C8;
+  }
+  .lesson-card.coming .arrow {
+    color: #D5D0C8;
+  }
+
+  .footer {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px 40px 40px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-mid);
+    border-top: 1px solid var(--border-light);
+  }
+  .footer a { color: var(--ita-green); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="header-bar"></div>
+
+<div class="hero">
+  <div class="flag">
+    <span class="g"></span>
+    <span class="w"></span>
+    <span class="r"></span>
+  </div>
+  <h1>
+    <span class="ita">STUDIAMO L'ITALIANO</span><br>
+    <span class="cn">ALL'UNIVERSITÀ</span>
+  </h1>
+  <div class="subtitle">大学意大利语阅读教程 · 第一册</div>
+  <div class="desc">
+    以通俗易懂的故事类文章为主，旨在增强学生对语言学习及意语阅读的兴趣。
+    每课包含课文、注解、练习和词汇表四个部分，配有全文音频、段落朗读、
+    中文译文对照和交互式练习。
+  </div>
+</div>
+
+<div class="lessons">
+  <h2>课程目录</h2>
+
+  <a href="lezione1.html" class="lesson-card">
+    <div class="num">1</div>
+    <div class="info">
+      <div class="title">L'ombrello di Ciccio</div>
+      <div class="cn-title">奇奇的雨伞</div>
+    </div>
+    <div class="arrow">→</div>
+  </a>
+
+  <a class="lesson-card coming">
+    <div class="num">2</div>
+    <div class="info">
+      <div class="title">La bella e la bestia</div>
+      <div class="cn-title">美女与野兽</div>
+    </div>
+    <div class="arrow">·</div>
+  </a>
+
+  <a class="lesson-card coming">
+    <div class="num">3</div>
+    <div class="info">
+      <div class="title">La cicala e la formica</div>
+      <div class="cn-title">知了和蚂蚁</div>
+    </div>
+    <div class="arrow">·</div>
+  </a>
+
+  <a class="lesson-card coming">
+    <div class="num">4</div>
+    <div class="info">
+      <div class="title">Il corvo e la volpe</div>
+      <div class="cn-title">乌鸦和狐狸</div>
+    </div>
+    <div class="arrow">·</div>
+  </a>
+
+  <a class="lesson-card coming">
+    <div class="num">5</div>
+    <div class="info">
+      <div class="title">L'ostrica e i due litiganti</div>
+      <div class="cn-title">牡蛎和两个争吵的人</div>
+    </div>
+    <div class="arrow">·</div>
+  </a>
+
+  <a class="lesson-card coming">
+    <div class="num">6</div>
+    <div class="info">
+      <div class="title">Pieretta e il bricco del latte</div>
+      <div class="cn-title">皮埃蕾塔和牛奶罐</div>
+    </div>
+    <div class="arrow">·</div>
+  </a>
+
+  <a class="lesson-card coming">
+    <div class="num">7</div>
+    <div class="info">
+      <div class="title">La formica che vuole cantare!</div>
+      <div class="cn-title">想唱歌的蚂蚁</div>
+    </div>
+    <div class="arrow">·</div>
+  </a>
+
+  <a class="lesson-card coming">
+    <div class="num">8</div>
+    <div class="info">
+      <div class="title">La moda cambia</div>
+      <div class="cn-title">时尚在变</div>
+    </div>
+    <div class="arrow">·</div>
+  </a>
+
+  <a class="lesson-card coming">
+    <div class="num">9</div>
+    <div class="info">
+      <div class="title">Il televisore</div>
+      <div class="cn-title">电视机</div>
+    </div>
+    <div class="arrow">·</div>
+  </a>
+</div>
+
+<div class="footer">
+  <p>大学意大利语阅读教程 1 · 外语教学与研究出版社</p>
+  <p>作者：刘晓丽 张宇靖 &nbsp;|&nbsp; <a href="https://github.com/realrentao/university-italian-reading" target="_blank">GitHub</a></p>
+</div>
+
+</body>
+</html>
