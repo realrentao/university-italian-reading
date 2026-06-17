@@ -751,33 +751,162 @@
   }
 </style>
 <script>
-// AUDIO_DATA loaded from audio_data.json
+// ===== Individual Audio File Loader =====
+// Each word/paragraph has its own JSON file for maximum parallelism
 
-// Lazy load audio data
+const AUDIO_CACHE = {};       // url -> {b64, blobUrl?}
+let AUDIO_LOADED = false;
+const PENDING_QUEUE = [];     // Keys waiting to be fetched
+let PRELOADING = false;
+
+// Mapping from key to file URL
+const AUDIO_MAP = { word: null, para: null };
+
+// Load indexes first, then preload all audio in background
 (async function() {
   try {
-    const [audioResp, testoResp] = await Promise.all([
-      fetch('audio_data.json'),
-      fetch('testo_audio.json')
+    const [wMapResp, pMapResp] = await Promise.all([
+      fetch('audio/w_map.json'),
+      fetch('audio/p_map.json')
     ]);
-    window.AUDIO_DATA = await audioResp.json();
-    window.TESTO_AUDIO = await testoResp.json();
+    AUDIO_MAP.word = await wMapResp.json();
+    const pData = await pMapResp.json();
+    AUDIO_MAP.para = pData.paragraphs;
+    AUDIO_MAP.full_key = pData.full_key;
+    
+    // Schedule background preload
+    setTimeout(startPreload, 100);
   } catch(e) {
-    console.warn('Failed to load audio data files, audio features disabled:', e);
-    window.AUDIO_DATA = {};
-    window.TESTO_AUDIO = {};
+    console.warn('Failed to load audio index, audio disabled:', e);
   }
 })();
 
+function startPreload() {
+  if (PRELOADING) return;
+  PRELOADING = true;
+  
+  // Collect all URLs to preload
+  const allUrls = [];
+  
+  // Word files
+  if (AUDIO_MAP.word) {
+    for (const key in AUDIO_MAP.word) {
+      allUrls.push(AUDIO_MAP.word[key]); // e.g. "audio/w/..."
+    }
+  }
+  // Paragraph files (array of {key, file})
+  if (AUDIO_MAP.para) {
+    for (const item of AUDIO_MAP.para) {
+      allUrls.push(item.file);
+    }
+  }
+  // Full text
+  allUrls.push('audio/p/ZnVsbA.json');
+  
+  preloadBatch(allUrls, 6); // 6 concurrent downloads
+}
 
-// TESTO_AUDIO loaded from testo_audio.json
+function preloadBatch(urls, concurrency) {
+  let idx = 0;
+  let loaded = 0;
+  const total = urls.length;
+  
+  function next() {
+    while (idx < total && getActiveFetches() < concurrency) {
+      const url = urls[idx++];
+      fetchAndCache(url).then(() => {
+        loaded++;
+        if (loaded % 10 === 0) console.log(`Audio preload: ${loaded}/${total}`);
+        next();
+      }).catch(() => next());
+    }
+    if (loaded >= total) {
+      PRELOADING = false;
+      AUDIO_LOADED = true;
+    }
+  }
+  next();
+}
+
+let activeFetches = 0;
+function getActiveFetches() { return activeFetches; }
+
+async function fetchAndCache(url) {
+  if (AUDIO_CACHE[url]) return;
+  activeFetches++;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    AUDIO_CACHE[url] = { b64: data.b64, text: data.text || '' };
+  } catch(e) {
+    // Silently fail - will retry on demand
+  } finally {
+    activeFetches--;
+  }
+}
+
+async function getAudioData(key, type) {
+  // type: 'word' or 'para'
+  let fileUrl;
+  if (type === 'word') {
+    fileUrl = AUDIO_MAP.word ? AUDIO_MAP.word[key] : null;
+  } else {
+    // para - key could be '0', '1', ..., 'full'
+    if (key === 'full') {
+      fileUrl = 'audio/p/ZnVsbA.json';
+    } else {
+      fileUrl = AUDIO_MAP.para ? AUDIO_MAP.para.find(i => i.key === key)?.file : null;
+    }
+  }
+  
+  if (!fileUrl) return null;
+  
+  // Check cache
+  if (AUDIO_CACHE[fileUrl]) return AUDIO_CACHE[fileUrl];
+  
+  // Fetch on demand
+  try {
+    const resp = await fetch(fileUrl);
+    const data = await resp.json();
+    AUDIO_CACHE[fileUrl] = { b64: data.b64, text: data.text || '' };
+    return AUDIO_CACHE[fileUrl];
+  } catch(e) {
+    console.warn('Failed to load audio:', fileUrl, e);
+    return null;
+  }
+}
+
+function b64ToBlobUrl(b64) {
+  const byteChars = atob(b64);
+  const bytes = new Uint8Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+  return URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
+}
 
 
-// Audio playback for Italian words
-  function playWord(btn) {
+// Helper: create Audio from b64 and play with optional speed
+  function playB64(b64, speed) {
+    const blobUrl = b64ToBlobUrl(b64);
+    const audio = new Audio(blobUrl);
+    if (speed) audio.playbackRate = speed;
+    audio._blobUrl = blobUrl;
+    return audio;
+  }
+
+  // Helper: common audio cleanup
+  function wireAudio(audio, btn, onEnd) {
+    audio.onended = () => { cleanupAudio(btn); if (onEnd) onEnd(); };
+    audio.onerror = () => { cleanupAudio(btn); if (onEnd) onEnd(); };
+    audio.play().catch(() => { cleanupAudio(btn); if (onEnd) onEnd(); });
+  }
+  
+  function cleanupAudio(btn) {
+    if (btn) btn.classList.remove('playing');
+  }
+
+  // Audio playback for Italian words (async, on-demand fetch)
+  async function playWord(btn) {
     const word = btn.dataset.word;
-    const b64 = AUDIO_DATA[word];
-    if (!b64) { console.warn('No audio for:', word); return; }
 
     // Toggle: same button clicked again
     if (currentBtn === btn) {
@@ -787,37 +916,18 @@
     
     stopAllAudio();
 
-    const byteChars = atob(b64);
-    const bytes = new Uint8Array(byteChars.length);
-    for (let i = 0; i < byteChars.length; i++) {
-      bytes[i] = byteChars.charCodeAt(i);
-    }
+    const data = await getAudioData(word, 'word');
+    if (!data || !data.b64) { console.warn('No audio for:', word); return; }
 
-    const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
-    const url = URL.createObjectURL(audioBlob);
-    const audio = new Audio(url);
+    const audio = playB64(data.b64);
     currentAudio = audio;
     currentBtn = btn;
     btn.classList.add('playing');
 
-    audio.onended = () => {
-      btn.classList.remove('playing');
-      URL.revokeObjectURL(url);
+    wireAudio(audio, btn, () => {
+      URL.revokeObjectURL(audio._blobUrl);
       currentAudio = null;
       currentBtn = null;
-    };
-
-    audio.onerror = () => {
-      btn.classList.remove('playing');
-      URL.revokeObjectURL(url);
-      currentAudio = null;
-      currentBtn = null;
-      console.error('Audio playback error:', word);
-    };
-
-    audio.play().catch(e => {
-      btn.classList.remove('playing');
-      console.error('Audio play failed:', e);
     });
   }
 
@@ -938,10 +1048,7 @@
     }
   }
 
-  function playPara(btn, idx) {
-    const data = TESTO_AUDIO[idx];
-    if (!data || !data.b64) return;
-    
+  async function playPara(btn, idx) {
     // Toggle: same button clicked again
     if (currentParaBtn === btn) {
       stopAllAudio();
@@ -950,22 +1057,18 @@
     
     stopAllAudio();
     
-    const b64 = data.b64;
-    const byteChars = atob(b64);
-    const bytes = new Uint8Array(byteChars.length);
-    for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+    const data = await getAudioData(idx, 'para');
+    if (!data || !data.b64) return;
     
-    const audio = new Audio(URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' })));
-    audio.playbackRate = paraSpeed;
+    const audio = playB64(data.b64, paraSpeed);
     currentParaAudio = audio;
     currentParaBtn = btn;
     btn.classList.add('playing');
     
-    audio.onended = () => {
-      btn.classList.remove('playing');
+    wireAudio(audio, btn, () => {
+      URL.revokeObjectURL(audio._blobUrl);
       currentParaAudio = null; currentParaBtn = null;
-    };
-    audio.play().catch(() => { btn.classList.remove('playing'); });
+    });
   }
 
   // Full-text playback with speed control
@@ -982,21 +1085,17 @@
     }
   }
 
-  function playFullText() {
+  async function playFullText() {
     const btn = document.getElementById('playFullBtn');
     fullPlayBtn = btn;
-    const data = TESTO_AUDIO['full'];
-    if (!data || !data.b64) return;
     
     if (fullAudio) {
       // Toggle play/pause - preserves position
       if (fullAudio.paused) {
-        // Resume from paused position
         fullAudio.play();
         btn.classList.add('playing');
         btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> 暂停';
       } else {
-        // Pause
         fullAudio.pause();
         btn.classList.remove('playing');
         btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> 播放';
@@ -1006,24 +1105,16 @@
     
     stopAllAudio();
     
-    const b64 = data.b64;
-    const byteChars = atob(b64);
-    const bytes = new Uint8Array(byteChars.length);
-    for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+    const data = await getAudioData('full', 'para');
+    if (!data || !data.b64) return;
     
-    const audio = new Audio(URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' })));
+    const audio = playB64(data.b64, currentSpeed);
     fullAudio = audio;
-    audio.playbackRate = currentSpeed;
     btn.classList.add('playing');
     btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> 暂停';
     
-    audio.onended = () => {
-      btn.classList.remove('playing');
-      btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> 播放';
-      fullAudio = null;
-    };
-    audio.play().catch(() => {
-      btn.classList.remove('playing');
+    wireAudio(audio, btn, () => {
+      URL.revokeObjectURL(audio._blobUrl);
       btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg> 播放';
       fullAudio = null;
     });
