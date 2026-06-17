@@ -713,6 +713,45 @@
   .page-footer .flag .w { background: #fff; border: 1px solid #ddd; }
   .page-footer .flag .r { background: var(--ita-red); }
 
+  /* ---- Lesson Navigation ---- */
+  .lesson-nav {
+    max-width: 1100px; margin: 0 auto;
+    padding: 20px 40px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 16px;
+  }
+  .lesson-nav.bottom { padding: 24px 40px 32px; }
+  .lesson-nav a {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 24px; font-size: 14px; font-weight: 500;
+    border-radius: 24px; text-decoration: none;
+    transition: all .2s;
+  }
+  .lesson-nav a.back {
+    background: transparent; color: var(--text-mid);
+    border: 1.5px solid #D0D0D0;
+  }
+  .lesson-nav a.back:hover {
+    border-color: var(--ita-green); color: var(--ita-green); background: #F0F5F0;
+  }
+  .lesson-nav a.next {
+    background: var(--ita-green); color: #fff;
+    border: 1.5px solid var(--ita-green);
+    margin-left: auto;
+  }
+  .lesson-nav a.next:hover { background: #007A38; }
+  .lesson-nav a.disabled {
+    opacity: 0.35; pointer-events: none; cursor: default;
+  }
+  .lesson-nav a svg {
+    width: 14px; height: 14px; fill: currentColor; flex-shrink: 0;
+  }
+  @media (max-width: 600px) {
+    .lesson-nav { padding: 16px 20px 8px; flex-wrap: wrap; }
+    .lesson-nav.bottom { padding: 20px 20px 24px; }
+    .lesson-nav a { padding: 8px 16px; font-size: 13px; }
+  }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 768px) {
     .book-header { padding: 24px 20px 0; }
@@ -1141,6 +1180,18 @@ function b64ToBlobUrl(b64) {
     <div class="sub">奇奇的雨伞</div>
   </div>
 </div>
+
+<!-- ===== TOP LESSON NAV ===== -->
+<nav class="lesson-nav top">
+  <a href="index.html" class="back">
+    <svg viewBox="0 0 24 24"><polygon points="15,3 7,12 15,21" transform="scale(-1,1) translate(-22,0)"/></svg>
+    导航页
+  </a>
+  <a href="#" class="next disabled">
+    下一课
+    <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+  </a>
+</nav>
 
 <!-- ===== RIBBON NAV ===== -->
 <nav class="ribbon-nav" id="nav">
@@ -1703,6 +1754,18 @@ function b64ToBlobUrl(b64) {
       </div>
 
 </div>
+
+<!-- ===== BOTTOM LESSON NAV ===== -->
+<nav class="lesson-nav bottom">
+  <a href="index.html" class="back">
+    <svg viewBox="0 0 24 24"><polygon points="15,3 7,12 15,21" transform="scale(-1,1) translate(-22,0)"/></svg>
+    返回导航页
+  </a>
+  <a href="#" class="next disabled">
+    下一课
+    <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+  </a>
+</nav>
 
 <!-- ===== FOOTER ===== -->
 <footer class="page-footer">
