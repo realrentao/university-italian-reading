@@ -789,7 +789,6 @@ const AUDIO_MAP = { word: null, para: null };
     AUDIO_MAP.word = await wMapResp.json();
     const pData = await pMapResp.json();
     AUDIO_MAP.para = pData.paragraphs;
-    AUDIO_MAP.full_key = pData.full_key;
     
     // Schedule background preload
     setTimeout(startPreload, 100);
@@ -802,25 +801,22 @@ function startPreload() {
   if (PRELOADING) return;
   PRELOADING = true;
   
-  // Collect all URLs to preload
   const allUrls = [];
   
-  // Word files
+  // Word files (object: key -> fileUrl)
   if (AUDIO_MAP.word) {
     for (const key in AUDIO_MAP.word) {
-      allUrls.push(AUDIO_MAP.word[key]); // e.g. "audio/w/..."
+      allUrls.push(AUDIO_MAP.word[key]);
     }
   }
-  // Paragraph files (array of {key, file})
+  // Paragraph files (object: key -> fileUrl, includes 'full')
   if (AUDIO_MAP.para) {
-    for (const item of AUDIO_MAP.para) {
-      allUrls.push(item.file);
+    for (const key in AUDIO_MAP.para) {
+      allUrls.push(AUDIO_MAP.para[key]);
     }
   }
-  // Full text
-  allUrls.push('audio/p/ZnVsbA.json');
   
-  preloadBatch(allUrls, 6); // 6 concurrent downloads
+  preloadBatch(allUrls, 6);
 }
 
 function preloadBatch(urls, concurrency) {
@@ -863,17 +859,12 @@ async function fetchAndCache(url) {
 }
 
 async function getAudioData(key, type) {
-  // type: 'word' or 'para'
   let fileUrl;
   if (type === 'word') {
     fileUrl = AUDIO_MAP.word ? AUDIO_MAP.word[key] : null;
   } else {
-    // para - key could be '0', '1', ..., 'full'
-    if (key === 'full') {
-      fileUrl = 'audio/p/ZnVsbA.json';
-    } else {
-      fileUrl = AUDIO_MAP.para ? AUDIO_MAP.para.find(i => i.key === key)?.file : null;
-    }
+    // para is an object: { "0": "audio/p/...", "1": ..., "full": ... }
+    fileUrl = AUDIO_MAP.para ? AUDIO_MAP.para[key] : null;
   }
   
   if (!fileUrl) return null;
