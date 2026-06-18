@@ -1120,7 +1120,8 @@ async function getAudioData(key, type) {
     
     // Word-by-word highlighting - use timestamps if available, else linear estimate
     function updateWords() {
-      if (!audio || audio.paused || !wordCount) return;
+      if (!audio || !wordCount) { animFrame = requestAnimationFrame(updateWords); return; }
+      if (audio.paused) { animFrame = requestAnimationFrame(updateWords); return; }
       let activeIdx;
       
       if (wordTimings && wordTimings.length > 0) {
@@ -1254,7 +1255,8 @@ async function getAudioData(key, type) {
     btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> 暂停';
     
     function updateFullWords() {
-      if (!audio || audio.paused || !testoSect) return;
+      if (!audio || !testoSect) { animFrame = requestAnimationFrame(updateFullWords); return; }
+      if (audio.paused) { animFrame = requestAnimationFrame(updateFullWords); return; }
       let globalWordIdx;
       
       if (fullWordTimings) {
