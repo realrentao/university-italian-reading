@@ -1053,6 +1053,15 @@ async function getAudioData(key, type) {
       : '<span class="arrow">&#9654;</span> 显示参考译文';
   }
 
+  function toggleSummary(btn) {
+    const box = btn.nextElementSibling;
+    box.classList.toggle('open');
+    const showing = box.classList.contains('open');
+    btn.innerHTML = showing
+      ? '<span class="arrow open">&#9660;</span> 隐藏参考摘要'
+      : '<span class="arrow">&#9654;</span> 显示参考摘要';
+  }
+
 
   let paraSpeed = 1.0;
 
@@ -1649,98 +1658,16 @@ async function getAudioData(key, type) {
       </div>
       <!-- Ex 3 -->
       <div class="exercise-section">
-        <h3><span class="num">3</span> Tradurre le frasi seguenti in italiano &mdash; 将下列句子译成意大利语</h3>
-        <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;">在输入框中写译文，点击"检查"查看正确答案：</p>
-        
-        <div class="ex-trans-item">
-          <div class="cn-text">洗手间总是被占着。</div>
-          <div class="input-row">
-            <input type="text" id="trans_0" placeholder="输入你的意大利语翻译..." onkeydown="if(event.key==='Enter') checkTranslation(0)">
-            <button class="btn-check" id="check_0" onclick="checkTranslation(0)">检查</button>
-          </div>
-          <div class="trans-result" id="result_0">
-            <div class="correct-answer">Il bagno era sempre occupato.</div>
-          </div>
+        <h3><span class="num">3</span> Fare un breve riassunto del testo &mdash; 写一篇课文摘要</h3>
+        <p style="font-size:13px;color:var(--text-mid);margin-bottom:8px;">用意大利语写一段 80-120 词的短文，概括课文《La stipsi di Godot》的主要内容。</p>
+        <div style="margin-bottom:8px;">
+          <textarea id="summary" rows="6" style="width:100%;padding:12px;border:1.5px solid #D5D0C8;border-radius:8px;font-family:'Times New Roman','Georgia',serif;font-size:17px;outline:none;resize:vertical;background:#FDFCFA;" placeholder="用意大利语写下你的摘要..."></textarea>
         </div>
-        <div class="ex-trans-item">
-          <div class="cn-text">妈妈在梳头，爸爸在刮胡子。</div>
-          <div class="input-row">
-            <input type="text" id="trans_1" placeholder="输入你的意大利语翻译..." onkeydown="if(event.key==='Enter') checkTranslation(1)">
-            <button class="btn-check" id="check_1" onclick="checkTranslation(1)">检查</button>
-          </div>
-          <div class="trans-result" id="result_1">
-            <div class="correct-answer">La mamma si pettinava, il papà si radeva.</div>
-          </div>
-        </div>
-        <div class="ex-trans-item">
-          <div class="cn-text">更不用说那些基本需求了。</div>
-          <div class="input-row">
-            <input type="text" id="trans_2" placeholder="输入你的意大利语翻译..." onkeydown="if(event.key==='Enter') checkTranslation(2)">
-            <button class="btn-check" id="check_2" onclick="checkTranslation(2)">检查</button>
-          </div>
-          <div class="trans-result" id="result_2">
-            <div class="correct-answer">Per non parlare dei bisogni fondamentali.</div>
-          </div>
-        </div>
-        <div class="ex-trans-item">
-          <div class="cn-text">亚历山德罗去对面比切太太家借洗手间。</div>
-          <div class="input-row">
-            <input type="text" id="trans_3" placeholder="输入你的意大利语翻译..." onkeydown="if(event.key==='Enter') checkTranslation(3)">
-            <button class="btn-check" id="check_3" onclick="checkTranslation(3)">检查</button>
-          </div>
-          <div class="trans-result" id="result_3">
-            <div class="correct-answer">Alessio andò dalla signora Bice per usare il suo bagno.</div>
-          </div>
-        </div>
-        <div class="ex-trans-item">
-          <div class="cn-text">在爸爸妈妈面前我不好意思回答。</div>
-          <div class="input-row">
-            <input type="text" id="trans_4" placeholder="输入你的意大利语翻译..." onkeydown="if(event.key==='Enter') checkTranslation(4)">
-            <button class="btn-check" id="check_4" onclick="checkTranslation(4)">检查</button>
-          </div>
-          <div class="trans-result" id="result_4">
-            <div class="correct-answer">Mi vergogno a rispondere davanti a papà e mamma.</div>
-          </div>
-        </div>
-        <div class="ex-trans-item">
-          <div class="cn-text">病人想和我私下交流。</div>
-          <div class="input-row">
-            <input type="text" id="trans_5" placeholder="输入你的意大利语翻译..." onkeydown="if(event.key==='Enter') checkTranslation(5)">
-            <button class="btn-check" id="check_5" onclick="checkTranslation(5)">检查</button>
-          </div>
-          <div class="trans-result" id="result_5">
-            <div class="correct-answer">Il paziente vuole comunicare con me in privato.</div>
-          </div>
-        </div>
-        <div class="ex-trans-item">
-          <div class="cn-text">这孩子患的是戈多便秘症。</div>
-          <div class="input-row">
-            <input type="text" id="trans_6" placeholder="输入你的意大利语翻译..." onkeydown="if(event.key==='Enter') checkTranslation(6)">
-            <button class="btn-check" id="check_6" onclick="checkTranslation(6)">检查</button>
-          </div>
-          <div class="trans-result" id="result_6">
-            <div class="correct-answer">Il bambino soffre di stipsi di Godot.</div>
-          </div>
-        </div>
-        <div class="ex-trans-item">
-          <div class="cn-text">这是一种罕见的病理状况。</div>
-          <div class="input-row">
-            <input type="text" id="trans_7" placeholder="输入你的意大利语翻译..." onkeydown="if(event.key==='Enter') checkTranslation(7)">
-            <button class="btn-check" id="check_7" onclick="checkTranslation(7)">检查</button>
-          </div>
-          <div class="trans-result" id="result_7">
-            <div class="correct-answer">È una patologia rara.</div>
-          </div>
-        </div>
-        <div class="ex-trans-item">
-          <div class="cn-text">父母被那可怕的、无法治愈的戈多便秘症吓得魂不附体。</div>
-          <div class="input-row">
-            <input type="text" id="trans_8" placeholder="输入你的意大利语翻译..." onkeydown="if(event.key==='Enter') checkTranslation(8)">
-            <button class="btn-check" id="check_8" onclick="checkTranslation(8)">检查</button>
-          </div>
-          <div class="trans-result" id="result_8">
-            <div class="correct-answer">I genitori erano terrorizzati dalla minacciosa, incurabile stipsi di Godot.</div>
-          </div>
+        <button class="ex4-toggle" onclick="toggleSummary(this)">
+          <span class="arrow">&#9654;</span> 显示参考摘要
+        </button>
+        <div class="ex4-translation">
+          <p>Alessio viveva con i genitori che passavano molto tempo in bagno. Quando lui doveva andare in bagno, era sempre occupato. Un giorno, Alessio ebbe l'idea di chiedere alla signora Bice, la vicina di fronte, di usare il suo bagno. Lei accettò. Così, ogni volta che i genitori erano in bagno, Alessio scappava dalla vicina. I genitori si preoccuparono perché Alessio non andava più in bagno a casa, e lo portarono dal dottor Gavazzi. Alessio raccontò tutto al dottore e si misero d'accordo. Il dottore diagnosticò la "stipsi di Godot", una patologia rara e incurabile. Spaventati, i genitori smisero di occupare il bagno a lungo. Da quel giorno, quando Alessio chiedeva di entrare, uscivano di corsa.</p>
         </div>
       </div>
       <!-- Ex 4 -->
