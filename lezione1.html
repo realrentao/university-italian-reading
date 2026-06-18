@@ -669,12 +669,12 @@
   .section-card.testo .section-body .p-wrap .orig-text {
     display: inline;
     transition: filter 0.35s ease;
+  }
+  .section-card.testo .section-body .p-wrap .orig-text p {
     background-repeat: no-repeat;
     background-size: 0% 100%;
     background-image: linear-gradient(to right, rgba(0,146,70,0.12), rgba(0,146,70,0.12));
-  }
-  .section-card.testo .section-body .p-wrap .orig-text.reading {
-    transition: background-size 0.15s linear, filter 0.3s ease;
+    transition: background-size 0.15s linear;
   }
   .section-card.testo .section-body .p-wrap .orig-text.blurred {
     filter: blur(8px);
@@ -920,8 +920,8 @@ async function getAudioData(key, type) {
       // Reset reading progress overlay
       const pWrap = currentParaBtn ? currentParaBtn.closest('.p-wrap') : null;
       if (pWrap) {
-        const os = pWrap.querySelector('.orig-text');
-        if (os) { os.classList.remove('reading'); os.style.backgroundSize = '0% 100%'; }
+        const p = pWrap.querySelector('.orig-text p');
+        if (p) { p.style.backgroundSize = '0% 100%'; }
       }
       currentParaAudio = null; currentParaBtn = null;
     }
@@ -1082,6 +1082,7 @@ async function getAudioData(key, type) {
     // Get paragraph wrapper for progress tracking
     const wrap = btn.closest('.p-wrap');
     const origSpan = wrap ? wrap.querySelector('.orig-text') : null;
+    const paraEl = origSpan ? origSpan.querySelector('p') : null;
     let animFrame = null;
     
     const data = await getAudioData(idx, 'para');
@@ -1093,14 +1094,12 @@ async function getAudioData(key, type) {
     currentParaBtn = btn;
     btn.classList.add('playing');
     
-    if (origSpan) origSpan.classList.add('reading');
-    
     // Sync reading progress with audio
     function updateProgress() {
       if (!audio || audio.paused) return;
       const pct = Math.min(audio.currentTime / (audio.duration || 1), 1);
-      if (origSpan) {
-        origSpan.style.backgroundSize = (pct * 100) + '% 100%';
+      if (paraEl) {
+        paraEl.style.backgroundSize = (pct * 100) + '% 100%';
       }
       animFrame = requestAnimationFrame(updateProgress);
     }
@@ -1108,9 +1107,8 @@ async function getAudioData(key, type) {
     
     function resetProgress() {
       if (animFrame) cancelAnimationFrame(animFrame);
-      if (origSpan) {
-        origSpan.classList.remove('reading');
-        origSpan.style.backgroundSize = '0% 100%';
+      if (paraEl) {
+        paraEl.style.backgroundSize = '0% 100%';
       }
     }
     
